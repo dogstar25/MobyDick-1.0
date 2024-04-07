@@ -2,6 +2,7 @@
 
 
 #include "GameObject.h"
+#include <algorithm>
 
 RayCastCallBack& RayCastCallBack::instance()
 {
