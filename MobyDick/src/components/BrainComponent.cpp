@@ -4,6 +4,7 @@
 #include "../game.h"
 #include "../RayCastCallBack.h"
 #include "../EnumMap.h"
+#include <algorithm>
 
 
 
