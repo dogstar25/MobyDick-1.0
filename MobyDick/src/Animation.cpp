@@ -8,7 +8,6 @@
 
 extern std::unique_ptr<Game> game;
 
-
 Animation::Animation(Json::Value animationDetailsJSON, b2Vec2 frameSize) :
 	m_frameSize(frameSize)
 {
