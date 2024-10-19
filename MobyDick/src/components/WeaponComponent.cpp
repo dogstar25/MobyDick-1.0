@@ -61,7 +61,8 @@ void WeaponComponent::update()
 
 }
 
-void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string bulletPoolId, float force, std::optional<SDL_Color> color)
+void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string bulletPoolId, float force, std::optional<SDL_Color> color, 
+	SDL_FPoint bulletDestination = { 0.0,0.0 })
 {
 
 	//Get a free bullet
@@ -72,6 +73,14 @@ void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string
 		const auto& vitalityComponent = bullet.value()->getComponent<VitalityComponent>(ComponentTypes::VITALITY_COMPONENT);
 		const auto& physicsComponent = bullet.value()->getComponent<PhysicsComponent>(ComponentTypes::PHYSICS_COMPONENT);
 		const auto& renderComponent = bullet.value()->getComponent<RenderComponent>(ComponentTypes::RENDER_COMPONENT);
+
+		//If we have a navigation component, put the bullet destination in it
+		if (bullet.value()->hasComponent(ComponentTypes::NAVIGATION_COMPONENT)) {
+
+			const auto& navigationComponent = bullet.value()->getComponent<NavigationComponent>(ComponentTypes::NAVIGATION_COMPONENT);
+			navigationComponent->setDestination(bulletDestination);
+
+		}
 
 		//Calculate the origin of the bullet
 		float dx = origin.x + cos(angle);
@@ -101,6 +110,9 @@ void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string
 		//Only set the bullets color if one was defined in the weapons config
 		//otherwise leave bullet whatever color it is
 		if (color.has_value()) {
+			renderComponent->setColor(color.value());
+		}
+		else {
 			renderComponent->setColor(m_weaponLevelDetails.at(m_currentLevel).color.value());
 		}
 
@@ -113,14 +125,14 @@ void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string
 
 }
 
-void WeaponComponent::fire(const b2Vec2& origin, const float& angle)
+void WeaponComponent::fire(const b2Vec2& origin, const float& angle, SDL_FPoint bulletDestination = {0.0,0.0})
 {
 	float force = m_weaponLevelDetails.at(m_currentLevel).force;
 	std::string bulletPoolId = m_weaponLevelDetails.at(m_currentLevel).bulletPoolId;
-	
+
 	std::optional<SDL_Color> color = m_weaponLevelDetails.at(m_currentLevel).color;
 
-	fire(origin, angle, bulletPoolId, force, color);
+	fire(origin, angle, bulletPoolId, force, color, bulletDestination);
 
 }
 

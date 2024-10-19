@@ -16,7 +16,9 @@ NavigationComponent::NavigationComponent(Json::Value componentJSON)
 {
 	m_componentType = ComponentTypes::NAVIGATION_COMPONENT;
 
-	m_passageFitSizeCategory = game->enumMap()->toEnum(componentJSON["passageFitSizeCategory"].asString());
+	if (componentJSON.isMember("passageFitSizeCategory")) {
+		m_passageFitSizeCategory = game->enumMap()->toEnum(componentJSON["passageFitSizeCategory"].asString());
+	}
 
 	m_pathRefreshTimer = { 0.5, true };
 
@@ -125,6 +127,7 @@ NavigationStatus NavigationComponent::navigateTo(float pixelX, float pixelY, int
 void NavigationComponent::update()
 {
 
+	int todd = 1;
 
 }
 

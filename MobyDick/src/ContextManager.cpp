@@ -2,7 +2,6 @@
 #include "SoundManager.h"
 #include "BaseConstants.h"
 #include <iostream>
-#include <atlstr.h>
 #include <shlobj.h>
 #include <assert.h>
 #include <filesystem>
@@ -17,8 +16,9 @@ ContextManager::ContextManager()
 
     assert(result == S_OK && "Error getting userdata directory for savegame file!");
 
-    m_saveGamePath = CString(userFolderPath);
-    m_saveGamePath += "\\MortalRescue";
+    //m_saveGamePath = CString(userFolderPath);
+    m_saveGamePath = userFolderPath;
+    m_saveGamePath += L"\\MortalRescue";
 
     if (!std::filesystem::is_directory(m_saveGamePath) || !std::filesystem::exists(m_saveGamePath)) {
         if (std::filesystem::create_directory(m_saveGamePath) == false) {

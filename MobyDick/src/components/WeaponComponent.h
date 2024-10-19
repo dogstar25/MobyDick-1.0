@@ -27,8 +27,8 @@ public:
 	~WeaponComponent();
 
 	void update();
-	void fire(const b2Vec2& origin, const float& angle, std::string bulletPoolId, float force, std::optional<SDL_Color>color);
-	void fire(const b2Vec2& origin, const float& angle);
+	void fire(const b2Vec2& origin, const float& angle, std::string bulletPoolId, float force, std::optional<SDL_Color>color, SDL_FPoint bulletDestination);
+	void fire(const b2Vec2& origin, const float& angle, SDL_FPoint bulletDestination);
 	void checkLevelUp() {};
 	void checkLevelUp(const int) {};
 	std::string getBulletPoolId();

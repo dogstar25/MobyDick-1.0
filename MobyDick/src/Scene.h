@@ -143,6 +143,7 @@ private:
 	bool m_hasPhysics{};
 	SDL_FPoint m_playerOrigSpawnPoint{};
 	bool m_navigationMapChanged{};
+	SDL_Cursor* m_mouseCursor{};
 
 	SceneState m_state{};
 	std::optional<std::shared_ptr<CutScene>> m_cutScene{};

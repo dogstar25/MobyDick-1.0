@@ -33,8 +33,8 @@ inline constexpr int MOUSE_CLICKED = 3;
 
 //Mouse Modes
 inline constexpr int CONTROL_MODE_SELECT = 0;
-inline constexpr int CONTROL_MODE_PLAY = 1;
-inline constexpr int CONTROL_MODE_IMGUI = 2;
+inline constexpr int CONTROL_MODE_PLAY_WITH_CURSOR = 1;
+inline constexpr int CONTROL_MODE_PLAY_NO_CURSOR = 2;
 
 namespace NavigationSizeCategory {
 	inline constexpr int SMALL = 0;
@@ -221,7 +221,7 @@ namespace DebugSceneSettings {
 
 //Component Types
 namespace ComponentTypes {
-	inline constexpr int MAX_COMPONENT_TYPES = 32;
+	inline constexpr int MAX_COMPONENT_TYPES = 33;
 
 	inline constexpr int NONE = 0;
 	inline constexpr int ACTION_COMPONENT = 1;

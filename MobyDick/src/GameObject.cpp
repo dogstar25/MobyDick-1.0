@@ -324,6 +324,9 @@ void GameObject::reset()
 		getComponent<PhysicsComponent>(ComponentTypes::PHYSICS_COMPONENT)->update();
 	}
 
+	if (hasComponent(ComponentTypes::NAVIGATION_COMPONENT)) {
+		getComponent<NavigationComponent>(ComponentTypes::NAVIGATION_COMPONENT)->reset();
+	}
 
 }
 

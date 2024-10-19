@@ -16,20 +16,30 @@ extern std::unique_ptr<Game> game;
 namespace util
 {
 
-	//bool isMouseButtonPressed(uint8 button) {
+	SDL_FPoint getMouseWorldPosition()
+	{
 
-	//	int mouseX, mouseY;
-	//	auto mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
-	//	if (mouseButtons & button) {
-	//		return true;
-	//	}
-	//	else {
-	//		return false;
-	//	}
+		int mouseX;
+		int mouseY;
 
-	//	
+		const uint32_t currentMouseStates = SDL_GetMouseState(&mouseX, &mouseY);
+		SDL_FPoint mouseLocation = { (float)mouseX , (float)mouseY };
 
-	//}
+		SDL_FPoint worldPosition = screenToWorldPosition(mouseLocation);
+
+		return worldPosition;
+
+	}
+
+	SDL_FPoint screenToWorldPosition(SDL_FPoint screenPosition)
+	{
+		SDL_FPoint worldPosition{};
+		worldPosition.x = screenPosition.x += Camera::instance().frame().x;
+		worldPosition.y = screenPosition.y += Camera::instance().frame().y;
+
+		return  worldPosition;
+
+	}
 
 	void sendSceneEvent(const int sceneActionCode, const std::string& sceneActionCodeId)
 	{
