@@ -37,6 +37,9 @@ public:
 	void navigateStop();
 	void disablePassageFitCheck() { m_applyPassageFit = false; }
 	void enablePassageFitCheck() { m_applyPassageFit = true; }
+	void setDestination(SDL_FPoint destination) { m_targetPixelDestination = destination; }
+	SDL_FPoint getDestination() { return m_targetPixelDestination; }
+	virtual void reset() {};
 
 private:
 

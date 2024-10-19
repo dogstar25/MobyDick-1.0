@@ -213,15 +213,57 @@ bool TextureManager::load(std::string texturesAssetsFile)
 
 
 	// Loop through every font defined and store it in the main font map
-		for (auto itr : root["fonts"])
-		{
-			id = itr["id"].asString();
-			imageFilename = itr["filename"].asString();
-			m_fontMap.emplace(id, imageFilename);
+	for (auto itr : root["fonts"])
+	{
+		id = itr["id"].asString();
+		imageFilename = itr["filename"].asString();
+		m_fontMap.emplace(id, imageFilename);
 
+	}
+
+	// Loop through every mouse cursor , build it from the textures we already have loaded earlier
+	for (auto itr : root["mouseCursors"])
+	{
+		SDL_Point hotspot{};
+		id = itr["id"].asString();
+		if (itr.isMember("hotSpot")) {
+			hotspot = { itr["hotSpot"]["x"].asInt(), itr["hotSpot"]["y"].asInt() };
 		}
+		std::string textureId = itr["textureId"].asString();
+		auto surface = getTexture(textureId)->surface;
+		auto quad = getTexture(textureId)->textureAtlasQuad;
+		//SDL_Surface* cursorSurface = SDL_CreateRGBSurface(0, quad.w, quad.y, 32, 0, 0, 0, 0);
+		SDL_Surface* cursorSurface = SDL_CreateRGBSurfaceWithFormat(0, quad.w, quad.h, 32, SDL_PIXELFORMAT_RGBA32);
+
+		SDL_SetSurfaceBlendMode(cursorSurface, SDL_BLENDMODE_BLEND);
+
+		SDL_BlitSurface(surface, &quad, cursorSurface, NULL);
+
+		SDL_Cursor* cursor = SDL_CreateColorCursor(cursorSurface, hotspot.x, hotspot.y);
+		m_mouseCursorMap.emplace(id, cursor);
+
+		SDL_FreeSurface(cursorSurface);
+
+	}
 
 	return true;
+}
+
+SDL_Cursor* TextureManager::getMouseCursor(std::string id)
+{
+
+	auto iter = m_mouseCursorMap.find(id);
+
+	if (iter != m_mouseCursorMap.end())
+	{
+		//fontFile = m_fontMap[id];
+		return iter->second;
+	}
+	else //default
+	{
+		return m_mouseCursorMap["CURSOR_ARROW"];
+	}
+
 }
 
 std::string TextureManager::getFont(std::string id)

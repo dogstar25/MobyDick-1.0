@@ -51,7 +51,7 @@ private:
 
 };
 
-const std::string GAME_FILENAME = "\\game.dat";
+const std::wstring GAME_FILENAME = L"\\game.dat";
 
 struct UserSettings {
 
@@ -93,7 +93,7 @@ protected:
 	std::map<int, StatusItem> m_statusValueMap;
 	UserSettings m_userSettings{};
 
-	std::string m_saveGamePath{};
+	std::wstring m_saveGamePath{};
 
 
 };

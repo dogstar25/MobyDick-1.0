@@ -54,6 +54,7 @@ public:
 	void loadCurrentLevel();
 	void respawnPlayer();
 	void deleteGameObject(std::string gameObjectName);
+	void setMouseCursor(SDL_Cursor* mouseCursor) { m_currentMouseCursor = mouseCursor; }
 
 	std::optional<SceneAction> getSceneKeyAction(SDL_Keycode);
 
@@ -95,6 +96,7 @@ private:
 	int m_currentSceneIndex{};
 	Timer m_gameTimer{};
 	int m_frameCount{};
+	SDL_Cursor* m_currentMouseCursor;
 
 	void _directorTakeOver();
 	void _directorRelease();

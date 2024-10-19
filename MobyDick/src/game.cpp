@@ -59,10 +59,10 @@ bool Game::init(std::shared_ptr<ContactListener> contactListener, std::shared_pt
 	uint16 windowFlags = 0 | SDL_WINDOW_OPENGL;
 	if (GameConfig::instance().windowFullscreen() == true)
 	{
-		//Swict these depending on if you are building for a release executable or just local development
+		//Switch these depending on if you are building for a release executable or just local development
 		//SDL_WINDOW_FULLSCREEN_DESKTOP for local development
-		windowFlags = windowFlags | SDL_WINDOW_FULLSCREEN;
-		//windowFlags = windowFlags | SDL_WINDOW_FULLSCREEN_DESKTOP;
+		//windowFlags = windowFlags | SDL_WINDOW_FULLSCREEN;
+		windowFlags = windowFlags | SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 	else
 	{

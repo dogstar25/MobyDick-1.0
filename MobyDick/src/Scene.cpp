@@ -40,6 +40,11 @@ Scene::Scene(std::string sceneId)
 	//Set the mouse mode
 	auto inputControlMode = game->enumMap()->toEnum(definitionJSON["inputControlMode"].asString());
 	m_inputControlMode = inputControlMode;
+	
+	//Set mouse cursor
+	auto mouseCursor = definitionJSON["mouseCursor"].asString();
+	m_mouseCursor = TextureManager::instance().getMouseCursor(mouseCursor);
+
 	setInputControlMode(inputControlMode);
 
 	//GameObjects that are defined at the scene level, not a level built scene
@@ -224,7 +229,7 @@ void Scene::clear()
 
 void Scene::update() {
 
-	//Direct the scne if it has a cutScene assigned
+	//Direct the scene if it has a cutScene assigned
 	if (m_cutScene.has_value() == true) {
 		direct();
 	}
@@ -232,6 +237,7 @@ void Scene::update() {
 	Camera::instance().update();
 	SoundManager::instance().update();
 
+	//Execute box2d physics world step
 	if (hasPhysics()) {
 		stepB2PhysicsWorld();
 	}
@@ -245,7 +251,7 @@ void Scene::update() {
 		}
 	}
 
-	//Clear all events
+	//Clear all player Input related events
 	SceneManager::instance().playerInputEvents().clear();
 
 	//Check all level triggers
@@ -422,20 +428,20 @@ void Scene::setInputControlMode(int inputControlMode)
 
 	m_inputControlMode = inputControlMode;
 
-	if (inputControlMode == CONTROL_MODE_PLAY) {
+	if (inputControlMode == CONTROL_MODE_PLAY_WITH_CURSOR) {
+		SceneManager::instance().setMouseCursor(m_mouseCursor);
+		SDL_ShowCursor(true);
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+	}	
+	else if (inputControlMode == CONTROL_MODE_PLAY_NO_CURSOR) {
 		SDL_ShowCursor(false);
 		SDL_SetRelativeMouseMode(SDL_TRUE);
-		game->IMGuiControlled = false;
 	}
+
 	else if (inputControlMode == CONTROL_MODE_SELECT) {
+		SceneManager::instance().setMouseCursor(m_mouseCursor);
 		SDL_ShowCursor(true);
 		SDL_SetRelativeMouseMode(SDL_FALSE);
-		game->IMGuiControlled = false;
-	}
-	else if (inputControlMode == CONTROL_MODE_IMGUI) {
-		SDL_ShowCursor(true);
-		SDL_SetRelativeMouseMode(SDL_FALSE);
-		game->IMGuiControlled = true;
 	}
 
 }

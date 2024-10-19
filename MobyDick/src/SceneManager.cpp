@@ -79,6 +79,12 @@ void SceneManager::run()
 		//IMGui framerate calc - R.I.P MobyDick Framerate code 2018 - 2022
 		ImGui::MobyDickFPSFrame();
 
+		//Set the mouse cursor to whatever the last loop decided
+		SDL_SetCursor(m_currentMouseCursor);
+
+		////Set the default mouse cursor for the next loop to be the ARROW cursor
+		//m_currentMouseCursor = TextureManager::instance().getMouseCursor("CURSOR_ARROW");
+
 		//Run update for every active scene
 		for (auto& scene : m_scenes) {
 
@@ -111,7 +117,7 @@ std::optional<SceneAction> SceneManager::pollEvents()
 {
 	int keyCode, keyStateCount;
 	SDL_Event event;
-	//PlayerInputEvent* playerInputEvent = nullptr;
+	PlayerInputEvent playerInputEvent{};
 	const Uint8* keyStates = nullptr;
 	std::optional<SceneAction> sceneAction{};
 	static int count = 0;
@@ -168,8 +174,9 @@ std::optional<SceneAction> SceneManager::pollEvents()
 				*/
 				if (sceneAction.has_value() == false) {
 					//std::cout << "\033[1;31m Store Key\033[0m" << keyCode << "\n";
-					PlayerInputEvent& playerInputEvent = m_PlayerInputEvents.emplace_back();
+					playerInputEvent = PlayerInputEvent();
 					playerInputEvent.event = event;
+					m_PlayerInputEvents.emplace_back(playerInputEvent);
 
 					//Get the keyboard state array and copy it to our save spot - memcpy!!!
 					keyStates = SDL_GetKeyboardState(&keyStateCount);
@@ -193,13 +200,20 @@ std::optional<SceneAction> SceneManager::pollEvents()
 
 			}
 			case SDL_MOUSEBUTTONUP:
-			case SDL_MOUSEBUTTONDOWN:
-			{
-				PlayerInputEvent& playerInputEvent = m_PlayerInputEvents.emplace_back();
+				//m_isMouseHeldDown = false;
+				playerInputEvent = PlayerInputEvent();
 				playerInputEvent.event = event;
+				m_PlayerInputEvents.emplace_back(playerInputEvent);
 
 				break;
-			}
+			case SDL_MOUSEBUTTONDOWN:
+				playerInputEvent = PlayerInputEvent();
+				playerInputEvent.event = event;
+				m_PlayerInputEvents.emplace_back(playerInputEvent);
+
+//				m_isMouseHeldDown = true;
+
+				break;
 			default:
 				//std::cout << "Unhandled Event Type is " << event.type << std::endl;
 				break;
@@ -282,7 +296,7 @@ void SceneManager::loadCurrentLevel()
 void SceneManager::directScene(std::string cutSceneId)
 {
 
-	//if wer are already in the middle of a curscene then disregard the
+	//if we're are already in the middle of a cutscene then disregard the
 	// new cutscene trying to be added
 	if (m_scenes.back().cutScene().has_value() == false) {
 		//disable and enable certain game objects and stuff

@@ -35,6 +35,8 @@ static bool operator <(SDL_Color a, SDL_Color b)
 
 namespace util
 {
+	SDL_FPoint getMouseWorldPosition();
+	SDL_FPoint screenToWorldPosition(SDL_FPoint screenPosition);
 	void sendSceneEvent(const int sceneActionCode, const std::string& sceneActionCodeId = std::string());
 	const int generateRandomNumber(int min, int max);
 	const float generateRandomNumber(float min, float max);
