@@ -1,0 +1,30 @@
+name: Auto Tag on Merge
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Generate Tag
+      id: tag
+      run: |
+        # Generate a unique tag, for example using date and short commit hash
+        TAG_NAME="v$(date +'%Y%m%d')-$(git rev-parse --short HEAD)"
+        echo "::set-output name=TAG::$TAG_NAME"
+
+    - name: Create Git Tag
+      run: |
+        git tag ${{ steps.tag.outputs.TAG }}
+        git push origin ${{ steps.tag.outputs.TAG }}
