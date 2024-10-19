@@ -1,30 +1,45 @@
 name: Auto Tag on Merge
 
 on:
-  push:
+  # Should trigger only when a Pull Request is Closed
+  # (the action will not create the Tag if the Pull Request is discarded - closed without merge)
+  pull_request:
+    types:
+      - closed
     branches:
       - master
-
+      
+permissions:
+  contents: write  # Grant permission to push changes (tags)
+  
 jobs:
-  tag:
+  TagOnPR:
+    name: Tag on Pull Request merge
     runs-on: ubuntu-latest
+    # This 'if' condition ensures the workflow only runs for merged PRs
+    if: github.event.pull_request.merged == true
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@master
+        
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Generate Tag
+        id: tag
+        run: |
+          # Generate a tag name based on the current date and the PR number
+          TAG_NAME="v$(date +'%Y%m%d')-pr${{ github.event.pull_request.number }}"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
 
-    - name: Set up Git
-      run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Create Git Tag
+        run: |
+          # Create and push the new tag
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
 
-    - name: Generate Tag
-      id: tag
-      run: |
-        # Generate a unique tag, for example using date and short commit hash
-        TAG_NAME="v$(date +'%Y%m%d')-$(git rev-parse --short HEAD)"
-        echo "::set-output name=TAG::$TAG_NAME"
-
-    - name: Create Git Tag
-      run: |
-        git tag ${{ steps.tag.outputs.TAG }}
-        git push origin ${{ steps.tag.outputs.TAG }}
+      - name: Print the created tag
+        run: |
+          echo "Created tag: $TAG_NAME"
