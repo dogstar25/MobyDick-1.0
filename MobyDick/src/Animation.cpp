@@ -6,7 +6,6 @@
 #include "ColorMap.h"
 #include "GameObject.h"
 
-
 extern std::unique_ptr<Game> game;
 
 
