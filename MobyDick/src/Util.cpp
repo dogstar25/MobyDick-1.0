@@ -435,6 +435,28 @@ namespace util
 		return tmp_s;
 	}
 
+	void waitForClick() {
+		bool waiting = true;
+		SDL_Event event;
+
+		while (waiting) {
+			// Poll for events
+			while (SDL_PollEvent(&event)) {
+				if (event.type == SDL_QUIT) {
+					// Exit the program if the user wants to quit
+					SDL_Quit();
+					exit(0);
+				}
+
+				if (event.type == SDL_MOUSEBUTTONDOWN) {
+					// Detect mouse click and resume
+					waiting = false;
+				}
+			}
+
+		}
+	}
+
 }
 
 

@@ -17,6 +17,13 @@ PhysicsComponent::PhysicsComponent(Json::Value definitionJSON, Scene* parentScen
 
 	m_physicsType = game->enumMap()->toEnum(physicsComponentJSON["type"].asString());
 
+
+	//We want to mostly always capture a list of other objects that this one is touching, but we can turn it off
+	// for some objects to save processing
+	if (physicsComponentJSON.isMember("touchingObjectsCapturedRequired")) {
+		m_touchingObjectsCapturedRequired = physicsComponentJSON["touchingObjectsCapturedRequired"].asBool();
+	}
+
 	m_objectAnchorPoint.Set(physicsComponentJSON["anchorPoint"]["x"].asFloat(),
 		physicsComponentJSON["anchorPoint"]["y"].asFloat());
 
