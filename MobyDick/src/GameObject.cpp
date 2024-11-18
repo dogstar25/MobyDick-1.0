@@ -779,35 +779,38 @@ void GameObject::_updateTouchingObjects()
 	//If this is a physics GameObject then capture a list of every object that it or its aux sensor is currently touching
 	if (this->hasComponent(ComponentTypes::PHYSICS_COMPONENT)) {
 
-		const std::shared_ptr<PhysicsComponent> physicsComponent = this->getComponent<PhysicsComponent>(ComponentTypes::PHYSICS_COMPONENT);
+		if (this->getComponent<PhysicsComponent>(ComponentTypes::PHYSICS_COMPONENT)->isTouchingObjectsCapturedRequired() == true) {
 
-		for (b2ContactEdge* edge = physicsComponent->physicsBody()->GetContactList(); edge; edge = edge->next)
-		{
-			b2Contact* contact = edge->contact;
+			const std::shared_ptr<PhysicsComponent> physicsComponent = this->getComponent<PhysicsComponent>(ComponentTypes::PHYSICS_COMPONENT);
 
-			//One of these fixtures being reported as a contact is the object itself, so we dont care about that one. 
-			// We only care about the objects are are not this object itself
-			GameObject* contactGameObject = reinterpret_cast<GameObject*>(contact->GetFixtureA()->GetBody()->GetUserData().pointer);
-			GameObject* contactGameObject2 = reinterpret_cast<GameObject*>(contact->GetFixtureB()->GetBody()->GetUserData().pointer);
+			for (b2ContactEdge* edge = physicsComponent->physicsBody()->GetContactList(); edge; edge = edge->next)
+			{
+				b2Contact* contact = edge->contact;
 
-			if (contact->IsTouching()) {
+				//One of these fixtures being reported as a contact is the object itself, so we dont care about that one. 
+				// We only care about the objects are are not this object itself
+				GameObject* contactGameObject = reinterpret_cast<GameObject*>(contact->GetFixtureA()->GetBody()->GetUserData().pointer);
+				GameObject* contactGameObject2 = reinterpret_cast<GameObject*>(contact->GetFixtureB()->GetBody()->GetUserData().pointer);
 
-				//const auto manifold = contact->GetManifold();
-				//manifold->localNormal;
+				if (contact->IsTouching()) {
 
-				if (contactGameObject != this && contactGameObject->hasTrait(TraitTag::fragment) == false) {
+					//const auto manifold = contact->GetManifold();
+					//manifold->localNormal;
 
-					auto contactGameObjectSharedPtr = m_parentScene->getGameObject(contactGameObject->id());
-					this->addTouchingObject(contactGameObjectSharedPtr.value());
-				
+					if (contactGameObject != this && contactGameObject->hasTrait(TraitTag::fragment) == false) {
+
+						auto contactGameObjectSharedPtr = m_parentScene->getGameObject(contactGameObject->id());
+						this->addTouchingObject(contactGameObjectSharedPtr.value());
+
+					}
+					else if (contactGameObject2 != this && contactGameObject2->hasTrait(TraitTag::fragment) == false) {
+
+						auto contactGameObjectSharedPtr = m_parentScene->getGameObject(contactGameObject2->id());
+						this->addTouchingObject(contactGameObjectSharedPtr.value());
+
+					}
+
 				}
-				else if (contactGameObject2 != this && contactGameObject2->hasTrait(TraitTag::fragment) == false) {
-
-					auto contactGameObjectSharedPtr = m_parentScene->getGameObject(contactGameObject2->id());
-					this->addTouchingObject(contactGameObjectSharedPtr.value());
-						
-				}
-
 			}
 		}
 	}

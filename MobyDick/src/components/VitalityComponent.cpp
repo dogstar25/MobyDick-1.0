@@ -61,7 +61,7 @@ VitalityComponent::VitalityComponent(Json::Value componentJSON)
 			}
 
 		//LevelCap is a setting that can be set at the level definition level so that the same vitality
-		//component can be resued for difffernt things
+		//component can be reused for differnt things
 		m_maxLevels = m_levelCap = level;
 
 		//Set values for first level

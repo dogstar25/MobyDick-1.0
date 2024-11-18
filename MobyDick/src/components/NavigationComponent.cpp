@@ -4,12 +4,16 @@
 #include "../game.h"
 #include <thread>
 #include <glm/glm.hpp>
+#include <queue>
 
 extern std::unique_ptr<Game> game;
 
 NavigationComponent::~NavigationComponent()
 {
 
+	if (m_pathfindingThread.joinable()) {
+		m_pathfindingThread.join();
+	}
 }
 
 NavigationComponent::NavigationComponent(Json::Value componentJSON)
@@ -52,6 +56,17 @@ NavigationStatus NavigationComponent::navigateTo(float pixelX, float pixelY, int
 {
 	bool destinationChanged{};
 
+	//We need to check if the last thread was successful in finding a path before we start a new thread
+	{
+		// Check if a new path is available
+		std::lock_guard<std::mutex> lock(m_pathMutex);
+		if (m_unableToFindPath == true && m_pathInProgress == false) {
+			m_unableToFindPath = false;
+			return NavigationStatus::NO_PATH_FOUND;
+		}
+
+	}
+
 	//Is the nagigation destination changing
 	if (m_targetPixelDestination.x != pixelX || m_targetPixelDestination.y != pixelY) {
 		destinationChanged = true;
@@ -73,23 +88,31 @@ NavigationStatus NavigationComponent::navigateTo(float pixelX, float pixelY, int
 	// this objects destination changed, then
 	if (parent()->parentScene()->navigationMapChanged() == true || 
 		destinationChanged == true ||
-		m_solutionPath.empty() == true || 
-		m_pathRefreshTimer.hasMetTargetDuration()) {
+		m_solutionPath.empty() == true) {
 
 		m_solutionPath.clear();
 		m_currentNavStep = 0;
 		
-		//std::thread t1([&](NavigationComponent* foo) { foo->enable(); }, this);
-
-		if (m_solutionPath.empty()) {
-			pathFound = _buildPathToDestination(fuzzyFactor);
+		if (!m_pathInProgress) {
+			_startPathfinding(fuzzyFactor);
 		}
 
-		if (pathFound == false) {
-			return NavigationStatus::NO_PATH_FOUND;
-		}
+	}
 
-		m_pathRefreshTimer.reset();
+	//We need to check if the last thread was successful in finding a path before we start a new thread
+	{
+		// Check if a new path is available
+		std::lock_guard<std::mutex> lock(m_pathMutex);
+		if (m_newPathAvailable) {
+			m_solutionPath = std::move(m_newSolutionPath);
+			m_newPathAvailable = false;
+			m_currentNavStep = 0;
+		}
+	}
+
+	//The solution path will be blank the first time calculating a path so return and do nothing
+	if (m_solutionPath.empty()) {
+		return NavigationStatus::IN_PROGRESS;
 	}
 
 	//Have we reached the targetDestination
@@ -122,7 +145,41 @@ NavigationStatus NavigationComponent::navigateTo(float pixelX, float pixelY, int
 	return NavigationStatus::IN_PROGRESS;
 }
 
+void NavigationComponent::_startPathfinding(int fuzzyFactor) {
+	
+	if (m_pathInProgress) return; // Avoid starting multiple threads
 
+	m_pathInProgress = true;
+	
+	{
+		// Ensure `m_unableToFindPath` is updated safely
+		std::lock_guard<std::mutex> lock(m_pathMutex);
+		m_unableToFindPath = false;
+	}
+
+	// Launch a new thread for pathfinding
+	m_pathfindingThread = std::thread([this, fuzzyFactor]() {
+		std::vector<SDL_Point> solutionPath;
+
+		// Perform pathfinding (expensive operation)
+		if (_buildPathToDestination(fuzzyFactor, solutionPath)) {
+			// Lock mutex to safely update the new solution path
+			std::lock_guard<std::mutex> lock(m_pathMutex);
+			m_newSolutionPath = std::move(solutionPath);
+			m_newPathAvailable = true;
+		}
+		else {
+			// If no path was found, update the flag safely
+			std::lock_guard<std::mutex> lock(m_pathMutex);
+			m_unableToFindPath = true;
+		}
+
+		m_pathInProgress = false;
+		});
+
+	// Detach the thread to allow it to run independently
+	m_pathfindingThread.detach();
+}
 
 void NavigationComponent::update()
 {
@@ -136,130 +193,111 @@ void NavigationComponent::postInit()
 
 }
 
-bool NavigationComponent::_buildPathToDestination(int fuzzyFactor)
-{
+bool NavigationComponent::_buildPathToDestination(int fuzzyFactor, std::vector<SDL_Point>& solutionPath) {
 
+	using TileKey = std::tuple<int, int>; // Define a type alias for the tuple key
+	std::map<TileKey, std::shared_ptr<AStarNode>> toSearch;
+	std::map<TileKey, std::shared_ptr<AStarNode>> processed;
 
-	std::unordered_map<std::string, std::shared_ptr<AStarNode>> toSearch{};
-	std::unordered_map<std::string, std::shared_ptr<AStarNode>> processed{};
-
-	//Get current position
+	// Get current position
 	SDL_FPoint currentPosition = parent()->getCenterPosition();
-
-	std::shared_ptr<AStarNode> startingNode = std::make_shared<AStarNode>();
-
-	//Make key
 	SDL_Point tileLocation = util::pixelToTileLocation(currentPosition.x, currentPosition.y);
-	std::string key = util::locationToString((float)tileLocation.x, (float)tileLocation.y);
+	TileKey startingKey = std::make_tuple(tileLocation.x, tileLocation.y);
 
-	//set position (in tiles)
+	// Create the starting node
+	std::shared_ptr<AStarNode> startingNode = std::make_shared<AStarNode>();
 	startingNode->position = tileLocation;
-	startingNode->keyValue = key;
-	toSearch.emplace(std::pair<std::string, std::shared_ptr<AStarNode>>(key, startingNode));
+	toSearch[startingKey] = startingNode;
 
-	//test
+	// Reset grid display (for debugging/visualization)
 	parent()->parentScene()->resetGridDisplay();
-	////
 
-	//While there are nodes left to search
-	while (toSearch.empty() == false) {
-
-		//set current to first node
+	// While there are nodes left to search
+	while (!toSearch.empty()) {
+		// Find the node with the lowest fCost
 		auto currentItr = toSearch.begin();
 		auto currentNode = currentItr->second;
 
-		//Loop through all nodes to find one "better" than the current
-		std::unordered_map<std::string, std::shared_ptr<AStarNode>>::iterator i = toSearch.begin();
-		while (i != toSearch.end())
-		{
-			auto nodeCandidate = i->second;
-			//If this candidate node "has a lower fcost or "better" than the current node
+		for (auto it = toSearch.begin(); it != toSearch.end(); ++it) {
+
+			auto nodeCandidate = it->second;
 			if (nodeCandidate->fCost < currentNode->fCost ||
 				(nodeCandidate->fCost == currentNode->fCost && nodeCandidate->hCost < currentNode->hCost)) {
 				currentNode = nodeCandidate;
-				currentItr = i;
+				currentItr = it;
 			}
 
-			i++;
 		}
 
-		//Add the current node to the processed and remove it from the toDo
-		processed.emplace(std::pair<std::string, std::shared_ptr<AStarNode>>(currentNode.get()->keyValue, currentNode));
+		// Add the current node to processed and remove it from toSearch
+		TileKey currentKey = std::make_tuple(currentNode->position.x, currentNode->position.y);
+		processed[currentKey] = currentNode;
 		toSearch.erase(currentItr);
 
-		//If this current node is actually our target node then build the path back and return
-		if(_foundDestinationNode(m_targetTileDestination, currentNode, fuzzyFactor)){
+		// Check if the current node is the destination
+		if (_foundDestinationNode(m_targetTileDestination, currentNode, fuzzyFactor)) {
+			// Build the solution path by traversing back
+			AStarNode* pathNode = currentNode.get();
+			solutionPath.insert(solutionPath.begin(), pathNode->position);
 
-			//This first node should be the destination node so add it to the solution
-			AStarNode* pathNode{ currentNode.get() };
-			m_solutionPath.insert(m_solutionPath.begin(), pathNode->position);
+			//if (pathNode->position.x == startingNode->position.x &&
+			//	pathNode->position.y == startingNode->position.y) {
 
-			//std::thread t1([&](Scene* parentScene) { parentScene->updateGridDisplay(pathNode->position.x, pathNode->position.y, TURN_ON, Colors::GREEN); }, parent()->parentScene());
+			//	break;
+			//}
 
-			//Now traverse the rest of the nodes using each ones connection key
-			while (true) {
+			while (pathNode->position.x != tileLocation.x || pathNode->position.y != tileLocation.y) {
 
-				if (pathNode->position.x == startingNode->position.x &&
-					pathNode->position.y == startingNode->position.y) {
-
-					//m_solutionPath.insert(m_solutionPath.begin(), pathNode->position);
-					break;
-				}
-
-				pathNode = processed[pathNode->connectionKey].get();
-
-				//m_solutionPath2.emplace_front(*pathNode);
-				m_solutionPath.insert(m_solutionPath.begin(), pathNode->position);
+				TileKey connectionKey = std::make_tuple(pathNode->connectionKeyX, pathNode->connectionKeyY);
+				pathNode = processed[connectionKey].get();
+				solutionPath.insert(solutionPath.begin(), pathNode->position);
 
 				//test
-				//parent()->parentScene()->updateGridDisplay(pathNode->position.x, pathNode->position.y, TURN_ON, Colors::GREEN);
+			//parent()->parentScene()->updateGridDisplay(pathNode->position.x, pathNode->position.y, TURN_ON, Colors::GREEN);
 				/////
-
 			}
 
-			return true;
+			
 
+			return true; // Path found
 		}
 
-		//Get and store all eight neighbors in an array
-		// check the navigation map to see which ones are impassable and do not include them
-		std::vector<std::shared_ptr<AStarNode>> neighbors{};
+		// Get neighbors and evaluate them
+		std::vector<std::shared_ptr<AStarNode>> neighbors;
 		_buildNeighbors(*currentNode, neighbors);
 
-		//For this new current node, loop through all 8 neighbor tiles
-		for (auto neighbor : neighbors) {
+		for (auto& neighbor : neighbors) {
+			TileKey neighborKey = std::make_tuple(neighbor->position.x, neighbor->position.y);
 
-			//Only process if it hasnt already been processed
-			if (_listContainsNode(neighbor.get(), processed) == false) {
-
-
-				bool inSearchList = _listContainsNode(neighbor.get(), toSearch);
-
-				//Calculate all of this nodes costs
-				_calculateCosts(startingNode.get(), neighbor.get());
-
-				//if this node isnt currently in the search list OR
-				//this gCost is better than the current one
-				if (!inSearchList || (neighbor->gCost < currentNode->gCost)) {
-
-					neighbor->connectionKey = currentNode.get()->keyValue;
-
-
-					if (!inSearchList) {
-						toSearch.emplace(std::pair<std::string, std::shared_ptr<AStarNode>>(neighbor.get()->keyValue, neighbor));
-					}
-
-				}
-
+			// Skip if the neighbor has already been processed
+			if (processed.find(neighborKey) != processed.end()) {
+				continue;
 			}
 
+			// Calculate costs for the neighbor
+			_calculateCosts(startingNode.get(), neighbor.get());
+
+			// Add neighbor to toSearch or update its connection if this path is better
+			auto it = toSearch.find(neighborKey);
+			if (it == toSearch.end() || neighbor->gCost < it->second->gCost) {
+
+				neighbor->connectionKeyX = currentNode->position.x;
+				neighbor->connectionKeyY = currentNode->position.y;
+				toSearch[neighborKey] = neighbor;
+			}
 		}
+	}
+
+
+	if (m_targetTileDestination.x==33 && m_targetTileDestination.y == 27) {
+
+		int todd = 1;
 
 	}
 
-	return false;
-
+	return false; // No path found
 }
+
 
 bool NavigationComponent::_foundDestinationNode(SDL_Point destinationTile, std::shared_ptr<AStarNode> currentNode, int fuzzyFactor)
 {
@@ -358,8 +396,6 @@ bool NavigationComponent::_isStuck()
 }
 
 
-
-
 void NavigationComponent::_calculateCosts(AStarNode* startingNode, AStarNode* node)
 {
 
@@ -373,19 +409,6 @@ void NavigationComponent::_calculateCosts(AStarNode* startingNode, AStarNode* no
 	node->fCost = node->hCost + node->gCost;
 
 }
-
-bool NavigationComponent::_listContainsNode(AStarNode* node, std::unordered_map<std::string, std::shared_ptr<AStarNode>>& list)
-{
-
-	auto search = list.find(node->keyValue);
-	if (search != list.end()) {
-		return true;
-	}
-
-	return false;
-
-}
-
 
 void NavigationComponent::_buildNeighbors(AStarNode& currentNode, std::vector<std::shared_ptr<AStarNode>>& neighbors)
 {
@@ -434,24 +457,23 @@ void NavigationComponent::_buildNeighbors(AStarNode& currentNode, std::vector<st
 
 }
 
-void NavigationComponent::_addNeighbor(int x, int y, std::vector<std::shared_ptr<AStarNode>>& neighbors)
+void NavigationComponent::_addNeighbor(int x, int y, std::vector<std::shared_ptr<AStarNode>>& neighbors) 
 {
 
 	if (_isValidNode(x, y)) {
+        // Create a new AStarNode
+        std::shared_ptr<AStarNode> starNode = std::make_shared<AStarNode>();
+        starNode->position = { x, y }; // Set position directly
+        
+		// Set the connection keys to the parent node's position
+		starNode->connectionKeyX = x;
+		starNode->connectionKeyY = y;
 
-		std::shared_ptr<AStarNode> starNode = std::make_shared<AStarNode>();
-		starNode->position = { x, y };
-		starNode->keyValue = util::locationToString((float)x,(float)y);
-
-		if (x < 0 || y < 0) {
-			int todd = 1;
-		}
-
-		neighbors.push_back(starNode);
-
-	}
-
+        // Add to neighbors
+        neighbors.push_back(starNode);
+    }
 }
+
 bool NavigationComponent::_isValidNode(const int x, const int y) 
 {
 
