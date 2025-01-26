@@ -81,9 +81,11 @@ void SceneManager::run()
 
 		//Set the mouse cursor to whatever the last loop decided
 		SDL_SetCursor(m_currentMouseCursor);
-
-		////Set the default mouse cursor for the next loop to be the ARROW cursor
-		//m_currentMouseCursor = TextureManager::instance().getMouseCursor("CURSOR_ARROW");
+		
+		//Set the default mouse cursor for the next loop to be the scenes default cursor
+		auto currentSceneDefinition = getDefinition(currentScene().id());
+		auto mouseCursor = currentSceneDefinition["mouseCursor"].asString();
+		m_currentMouseCursor = TextureManager::instance().getMouseCursor(mouseCursor);
 
 		//Run update for every active scene
 		for (auto& scene : m_scenes) {

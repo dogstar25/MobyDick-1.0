@@ -113,7 +113,7 @@ void WeaponComponent::fire(const b2Vec2& origin, const float& angle, std::string
 			renderComponent->setColor(color.value());
 		}
 		else {
-			renderComponent->setColor(m_weaponLevelDetails.at(m_currentLevel).color.value());
+			renderComponent->setColor(bullet.value()->getColor());
 		}
 
 		//Add the bullet object to the main gameObject collection

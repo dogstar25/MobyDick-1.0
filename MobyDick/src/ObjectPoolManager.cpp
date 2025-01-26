@@ -82,6 +82,19 @@ std::shared_ptr<Texture> ObjectPoolManager::getPoolObjectTexture(std::string poo
 	return texture;
 }
 
+const std::vector<std::shared_ptr<GameObject>>& ObjectPoolManager::getObjectPool(std::string poolId)
+{
+
+	auto it = m_objectPool.find(poolId);
+	if (it != m_objectPool.end()) {
+		return it->second;
+	}
+
+	//return an empty vector
+	return {};
+
+}
+
 void ObjectPoolManager::clear()
 {
 	for (auto particleMap : m_objectPool)
