@@ -42,6 +42,7 @@ public:
 	void setIsLifetimeAlphaFade(bool isLifetimeAlphaFade) { m_isLifetimeAlphaFade = isLifetimeAlphaFade; }
 
 	void setLifetimeTimer(float lifetime);
+	void setLifetime(float lifetime) { m_lifetime = lifetime; }
 	void resetLifetime();
 	void reset();
 

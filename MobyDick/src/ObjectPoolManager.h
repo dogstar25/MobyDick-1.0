@@ -29,9 +29,10 @@ public:
 	std::shared_ptr<Texture> getPoolObjectTexture(std::string);
 
 	//Accessor Functions
-	const std::unordered_map <std::string, std::vector<std::shared_ptr<GameObject>>>& objectPool() {
+	const std::unordered_map <std::string, std::vector<std::shared_ptr<GameObject>>>& getObjectPools() {
 		return m_objectPool;
 	}
+	const std::vector<std::shared_ptr<GameObject>>& getObjectPool(std::string poolId);
 
 private:
 

@@ -77,7 +77,10 @@ public:
 	std::vector<std::shared_ptr<GameObject>> getGameObjectsByName(std::string name);
 	std::optional<std::shared_ptr<GameObject>> getFirstGameObjectByName(std::string name);
 	std::vector<std::shared_ptr<GameObject>> getGameObjectsByTrait(int trait);
-	std::optional<std::shared_ptr<GameObject>> getFirstGameObjectByTrait(int trait); //use when you know there's only one
+	std::optional<std::shared_ptr<GameObject>> getFirstGameObjectByTrait(int trait);
+	std::vector<std::shared_ptr<GameObject>> getGameObjectsByType(std::string type);
+	std::optional<std::shared_ptr<GameObject>> getFirstGameObjectByType(std::string type);
+
 	std::optional<std::string> getNextLevel();
 	
 	void stepB2PhysicsWorld() {

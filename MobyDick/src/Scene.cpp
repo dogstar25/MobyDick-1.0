@@ -576,6 +576,41 @@ std::optional<std::shared_ptr<GameObject>> Scene::getFirstGameObjectByName(std::
 	return foundGameObject;
 }
 
+std::optional<std::shared_ptr<GameObject>> Scene::getFirstGameObjectByType(std::string type)
+{
+	std::optional<std::shared_ptr<GameObject>> foundGameObject{};
+
+	auto it = m_gameObjectLookup.begin();
+	while (it != m_gameObjectLookup.end()) {
+
+		if (it->second.lock()->type() == type) {
+			foundGameObject = it->second.lock();
+			break;
+		}
+
+		++it;
+	}
+
+	return foundGameObject;
+}
+
+std::vector<std::shared_ptr<GameObject>> Scene::getGameObjectsByType(std::string type)
+{
+	std::vector<std::shared_ptr<GameObject>> foundGameObjects;
+
+	auto it = m_gameObjectLookup.begin();
+	while (it != m_gameObjectLookup.end()) {
+
+		if (it->second.lock()->type() == type) {
+			foundGameObjects.push_back(it->second.lock());
+		}
+
+		++it;
+	}
+
+	return foundGameObjects;
+}
+
 std::vector<std::shared_ptr<GameObject>> Scene::getGameObjectsByTrait(int trait)
 {
 	std::vector<std::shared_ptr<GameObject>> foundGameObjects;

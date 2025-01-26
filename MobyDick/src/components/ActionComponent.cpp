@@ -76,6 +76,11 @@ void ActionComponent::render()
 				if (interactingObject->isPointingAt(parent()->getCenterPosition())) {
 
 					if (m_interactiveMenuObject) {
+
+						//Change the mouse cursor to an arrow
+						auto arrowCursor = TextureManager::instance().getMouseCursor("CURSOR_ARROW");
+						SceneManager::instance().setMouseCursor(arrowCursor);
+
 						SDL_FPoint position = determineInteractionMenuLocation(interactingObject, parent(), m_interactiveMenuObject.get());
 						m_interactiveMenuObject->setPosition(position);
 						m_interactiveMenuObject->render();
